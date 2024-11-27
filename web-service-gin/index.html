@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Albums List</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      h1 {
+        color: #333;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+      table,
+      th,
+      td {
+        border: 1px solid #ccc;
+      }
+      th,
+      td {
+        padding: 10px;
+        text-align: left;
+      }
+      th {
+        background-color: #f4f4f4;
+      }
+      button {
+        padding: 8px 16px;
+        margin-top: 10px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Albums Collection</h1>
+
+    <!-- Form to Add Album -->
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Title</th>
+          <th>Artist</th>
+          <th>Price</th>
+        </tr>
+      </thead>
+      <tbody id="albumsTable">
+        <!-- Data album akan ditambahkan disini -->
+      </tbody>
+    </table>
+
+    <h2>Add Album</h2>
+    <form
+      id="albumForm"
+      style="
+        max-width: 400px;
+        margin: 0 auto;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background-color: #f9f9f9;
+      "
+    >
+      <div style="margin-bottom: 15px">
+        <label
+          for="id"
+          style="display: block; font-weight: bold; margin-bottom: 5px"
+          >ID:</label
+        >
+        <input
+          type="text"
+          id="id"
+          style="
+            width: 100%;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+          "
+          required
+        />
+      </div>
+
+      <div style="margin-bottom: 15px">
+        <label
+          for="title"
+          style="display: block; font-weight: bold; margin-bottom: 5px"
+          >Title:</label
+        >
+        <input
+          type="text"
+          id="title"
+          style="
+            width: 100%;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+          "
+          required
+        />
+      </div>
+
+      <div style="margin-bottom: 15px">
+        <label
+          for="artist"
+          style="display: block; font-weight: bold; margin-bottom: 5px"
+          >Artist:</label
+        >
+        <input
+          type="text"
+          id="artist"
+          style="
+            width: 100%;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+          "
+          required
+        />
+      </div>
+
+      <div style="margin-bottom: 20px">
+        <label
+          for="price"
+          style="display: block; font-weight: bold; margin-bottom: 5px"
+          >Price:</label
+        >
+        <input
+          type="number"
+          id="price"
+          style="
+            width: 100%;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+          "
+          required
+        />
+      </div>
+
+      <button
+        type="submit"
+        style="
+          width: 100%;
+          padding: 10px;
+          background-color: #4caf50;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 16px;
+        "
+      >
+        Add Album
+      </button>
+    </form>
+
+    <script>
+      const API_URL = "http://localhost:8080/albums";
+
+      // Function to fetch and display all albums
+      async function fetchAlbums() {
+        try {
+          const response = await fetch(API_URL);
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+
+          const albums = await response.json();
+          const table = document.getElementById("albumsTable");
+          table.innerHTML = "";
+
+          albums.forEach((album) => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+              <td>${album.id}</td>
+              <td>${album.title}</td>
+              <td>${album.artist}</td>
+              <td>$${album.price.toFixed(2)}</td>
+            `;
+            table.appendChild(row);
+          });
+        } catch (error) {
+          console.error("Error fetching albums:", error);
+        }
+      }
+
+      // Add a new album
+      async function addAlbum(album) {
+        try {
+          const response = await fetch(API_URL, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(album),
+          });
+
+          if (response.ok) {
+            fetchAlbums(); // Refresh the table
+          } else {
+            throw new Error(`Error adding album: ${response.status}`);
+          }
+        } catch (error) {
+          console.error("Error adding album:", error);
+        }
+      }
+
+      // Edit an existing album
+      async function editAlbum(id) {
+        const album = await fetchAlbumByID(id);
+        if (album) {
+          // Populate the form with current album data
+          document.getElementById("id").value = album.id;
+          document.getElementById("title").value = album.title;
+          document.getElementById("artist").value = album.artist;
+          document.getElementById("price").value = album.price;
+
+          // Change form button to update
+          document.querySelector("button[type='submit']").innerText =
+            "Update Album";
+          document.getElementById("albumForm").onsubmit = function (e) {
+            e.preventDefault();
+            updateAlbum(id);
+          };
+        }
+      }
+
+      // Fetch an album by ID
+      async function fetchAlbumByID(id) {
+        const response = await fetch(`${API_URL}/${id}`);
+        if (response.ok) {
+          return await response.json();
+        } else {
+          console.error("Album not found!");
+          return null;
+        }
+      }
+
+      //Update album information
+      async function updateAlbum(id) {
+        const album = {
+          id: document.getElementById("id").value,
+          title: document.getElementById("title").value,
+          artist: document.getElementById("artist").value,
+          price: parseFloat(document.getElementById("price").value),
+        };
+
+        try {
+          const response = await fetch(`${API_URL}/${id}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(album),
+          });
+
+          if (response.ok) {
+            fetchAlbums(); // Refresh the table
+            resetForm();
+          } else {
+            throw new Error(`Error updating album: ${response.status}`);
+          }
+        } catch (error) {
+          console.error("Error updating album:", error);
+        }
+      }
+
+      // Delete an album
+      async function deleteAlbum(id) {
+        try {
+          const response = await fetch(`${API_URL}/${id}`, {
+            method: "DELETE",
+          });
+
+          if (response.ok) {
+            fetchAlbums(); // Refresh the table
+          } else {
+            throw new Error(`Error deleting album: ${response.status}`);
+          }
+        } catch (error) {
+          console.error("Error deleting album:", error);
+        }
+      }
+
+      // Reset form after submit
+      function resetForm() {
+        document.getElementById("albumForm").reset();
+        document.querySelector("button[type='submit']").innerText = "Add Album";
+        document.getElementById("albumForm").onsubmit = function (e) {
+          e.preventDefault();
+          const newAlbum = {
+            id: document.getElementById("id").value,
+            title: document.getElementById("title").value,
+            artist: document.getElementById("artist").value,
+            price: parseFloat(document.getElementById("price").value),
+          };
+          addAlbum(newAlbum);
+        };
+      }
+
+      // Handle form submission
+      document.getElementById("albumForm").onsubmit = function (e) {
+        e.preventDefault();
+        const newAlbum = {
+          id: document.getElementById("id").value,
+          title: document.getElementById("title").value,
+          artist: document.getElementById("artist").value,
+          price: parseFloat(document.getElementById("price").value),
+        };
+        addAlbum(newAlbum);
+      };
+
+      // Load albums on page load
+      fetchAlbums();
+    </script>
+  </body>
+</html>
